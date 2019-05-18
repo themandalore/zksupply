@@ -4,34 +4,22 @@ pragma solidity >=0.4.21 <0.6.0;
 import "./RangeProofValidator.sol";
 
 contract ZkSensors is RangeProofValidator{
-  mapping(uint => bytes32) idToSensorReport;
+  mapping(uint => bytes) idToSensorReport;
   mapping(uint => bytes) idToZkProof;
-  mapping(uint => bool) isVerified;
-  address owner;
 
 
-
-  constructor() public {
-    owner = msg.sender;
-  }
-
-  modifier restricted() {
-    if (msg.sender == owner) _;
-  }
-
-  function senssorReport(uint _id, bytes32 _hash) public {
+  function senssorReport(uint _id, bytes memory _hash) public {
     idToSensorReport[_id] = _hash;
   }
 
-  // function submitProof(bytes memory _zkproof) public{
 
-
-
-  // }
-
-  // function verifyProof(uint _id) public returns(bool){
-
-  // }
-
-
+  function verifyProof(uint _id,bytes memory _proof) public returns(bool res){
+    uint _lower = 0;
+    uint _upper = 3;
+    res = validate(_lower,_upper,idToSensorReport[_id],_proof);
+    if(res){
+      idToZkProof[_id] = _proof;
+    }
+  }
+  
 }
