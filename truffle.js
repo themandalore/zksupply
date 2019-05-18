@@ -2,7 +2,7 @@ var HDWalletProvider = require("truffle-hdwallet-provider");
 
 var mnemonic = "nick lucian brenda kevin sam fiscal patch fly damp ocean produce wish";
 
-//ganache-cli -l 200000000
+//ganache-cli -l 400000000
 
 module.exports = {
   networks: {
@@ -10,7 +10,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*",
-      gas: 100000000,
+      gas: 300000000,
       websockets: true
     },
     dev2: {
@@ -31,7 +31,7 @@ module.exports = {
       gasPrice: 17e9
     },
     ropsten: {
-      provider: new HDWalletProvider(mnemonic, "https://ropsten.infura.io"),
+      provider: new HDWalletProvider(mnemonic, "https://ropsten.infura.io/zkGX3Vf8njIXiHEGRueB"),
       network_id: 3,
       gas: 4612388
     },

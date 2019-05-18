@@ -1,25 +1,79 @@
 pragma solidity >=0.4.21 <0.6.0;
-
+pragma experimental ABIEncoderV2; // solium-disable-line no-experimental 
 //import "chainlink/contracts/ChainlinkClient.sol";
 import "./RangeProofValidator.sol";
 
 contract ZkSensors is RangeProofValidator{
-  mapping(uint => bytes) idToSensorReport;
-  mapping(uint => bytes) idToZkProof;
 
-
-  function senssorReport(uint _id, bytes memory _hash) public {
-    idToSensorReport[_id] = _hash;
+  struct Details {
+        uint timestamp_c1;
+        uint timestamp_c2;
+        uint orientation_c1;
+        uint orientation_c2;
   }
 
 
-  function verifyProof(uint _id,bytes memory _proof) public returns(bool res){
+  mapping(bytes32 => Details[]) idToSensorReport;
+  mapping(bytes32 => bytes) idToZkProof;
+  bytes32[] sensorIds;
+
+  event SensorReport(bytes32 _id,uint _tc1, uint _tc2, uint _oc1, uint _oc2);
+  event ProofVerified(bytes32 _id, bytes _proof);
+  event FailedProof(bytes32 _id, bytes _proof);
+
+  function sensorReport(bytes32 _id, uint _tc1, uint _tc2, uint _oc1, uint _oc2) public {
+    idToSensorReport[_id].push(Details({
+      timestamp_c1: _tc1,
+      timestamp_c2: _tc2,
+      orientation_c1: _oc1,
+      orientation_c2: _oc2
+    }));
+    emit SensorReport(_id, _tc1,_tc2,_oc1,_oc2);
+  }
+
+
+  function verifyProof(bytes32 _id,bytes memory _proof) public returns(bool res){
     uint _lower = 0;
     uint _upper = 3;
-    res = validate(_lower,_upper,idToSensorReport[_id],_proof);
+    Details[] storage _d = idToSensorReport[_id];
+    bytes memory _data;
+    bytes memory _comm;
+    for(uint i =0;i<_d.length;i++){
+      _data = generateCommitment(_d[i].timestamp_c1,_d[i].timestamp_c2,_d[i].orientation_c1,_d[i].orientation_c2);
+      _comm = abi.encodePacked(_comm,_data);
+    }
+    res = validate(_lower,_upper,_comm,_proof);
     if(res){
       idToZkProof[_id] = _proof;
+      emit ProofVerified(_id,_proof);
+    }
+    else{
+      emit FailedProof(_id,_proof);
     }
   }
-  
+
+  function generateCommitment(uint _tc1,uint _tc2, uint _oc1, uint _oc2) public returns(bytes memory res){
+    res = abi.encodePacked(toBytes(_tc1),toBytes(_tc2),toBytes(_oc1),toBytes(_oc2));
+  }
+
+  function toBytes(uint256 x) internal returns (bytes memory b) {
+      b = new bytes(32);
+      assembly { mstore(add(b, 32), x) }
+  }
+
+  function getAllIds() public view returns(bytes32[] memory){
+    return sensorIds;
+  }
+
+    function getSensorIdsLength() public view returns(uint){
+    return sensorIds.length;
+  }
+
+  function getDetailsByIdAndIndex(bytes32 _id, uint _index) public view returns(Details memory){
+    return idToSensorReport[_id][_index];
+  }
+
+  function getNumberOfReportsById(bytes32 _id) public view returns(uint){
+    return idToSensorReport[_id].length;
+  }
 }
