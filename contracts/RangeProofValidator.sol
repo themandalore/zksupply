@@ -1,4 +1,5 @@
-pragma solidity ^0.4.18;
+pragma solidity >=0.4.21 <0.6.0;
+pragma experimental ABIEncoderV2; // solium-disable-line no-experimental 
 
 contract RangeProofValidator {
 
@@ -6,18 +7,21 @@ contract RangeProofValidator {
     int constant l = 40;
 
     // Convert bytes to array of big integers
-    function validate(uint lower, uint upper, bytes commitment, bytes proof) view returns (bool) {
+    function validate(uint lower, uint upper, bytes memory commitment, bytes memory proof) public returns(bool) {
         bytes[] memory com = new bytes[](7);
         bytes[] memory prf = new bytes[](31);
         uint[] memory index;
         uint destPointer;
         uint srcPointer;
+        bytes memory part;
+        uint length;
+        uint start;
 
         assembly { index := commitment }
         for (uint i = 0; i < com.length; i++) {
-            uint start = index[i];
-            uint length = (i == com.length - 1 ? commitment.length : index[i+1]) - index[i];
-            bytes memory part = new bytes(length);
+            start = index[i];
+            length = (i == com.length - 1 ? commitment.length : index[i+1]) - index[i];
+            part = new bytes(length);
             assembly {
                 destPointer := add(part, 32)
                 srcPointer := add(add(commitment, 32), start)
@@ -29,7 +33,7 @@ contract RangeProofValidator {
 
         assembly { index := proof }
 
-        for ( i = 0; i < prf.length; i++) {
+        for (uint i = 0; i < prf.length; i++) {
             start = index[i];
             length = (i == prf.length - 1 ? proof.length : index[i+1]) - index[i];
             part = new bytes(length);
@@ -41,11 +45,10 @@ contract RangeProofValidator {
             copyWords(destPointer, srcPointer, length);
             prf[i] = part;
         }
-
         return validateProof(lower, upper, com, prf);
     }
 
-    function validateProof(uint lower, uint upper, bytes[] com, bytes[] prf) private view returns (bool) {
+    function validateProof(uint lower, uint upper, bytes[] memory com, bytes[] memory prf) internal returns (bool) {
         // Stack too deep so store in memory: tmp = (a, b, cLeft, cRight)
         bytes[] memory tmp = new bytes[](11);
 
@@ -104,13 +107,13 @@ contract RangeProofValidator {
         return true;
     }
 
-    function validateFloorSqrt(bytes memory sqrt, bytes memory N) view returns (bool) {
+    function validateFloorSqrt(bytes memory sqrt, bytes memory N) internal returns (bool) {
         bytes memory sqrtPlus = bigadd(sqrt, toBigInt(1));
         return compare(square(sqrt), N) <= 0 && compare(square(sqrtPlus), N) > 0;
     }
 
     function validateCFT(bytes memory b, bytes memory N, bytes memory g, bytes memory h, bytes memory Einv, bytes memory C,
-        bytes memory D1, bytes memory D2) view returns (bool) {
+        bytes memory D1, bytes memory D2) internal returns (bool) {
 
         bytes memory c = bmod(C, shiftLeft(toBigInt(1), t));
         bytes memory W = trim(restoreCommitment(N, g, h, D1, D2, Einv, c));
@@ -121,36 +124,36 @@ contract RangeProofValidator {
     }
 
     function validateSQ(bytes memory N, bytes memory g, bytes memory h_orInv1, bytes memory h_orInv2, bytes memory F,
-        bytes memory c, bytes memory D, bytes memory D1, bytes memory D2, bytes memory Einv, bytes memory Finv) view returns (bool) {
+        bytes memory c, bytes memory D, bytes memory D1, bytes memory D2, bytes memory Einv, bytes memory Finv) internal returns (bool) {
 
         return validateEC(N, g, F, h_orInv1, h_orInv2, Finv, Einv, c, D, D1, D2);
     }
 
     function validateEC(bytes memory N, bytes memory g1, bytes memory g2, bytes memory h1, bytes memory h2,
-        bytes memory Einv, bytes memory Finv, bytes memory c, bytes memory D, bytes memory D1, bytes memory D2) view returns (bool) {
+        bytes memory Einv, bytes memory Finv, bytes memory c, bytes memory D, bytes memory D1, bytes memory D2) internal returns (bool) {
 
         bytes memory W1 = trim(restoreCommitment(N, g1, h1, D, D1, Einv, c));
         bytes memory W2 = trim(restoreCommitment(N, g2, h2, D, D2, Finv, c));
 
-        return compare(loadHash(keccak256(W1, W2)), c) == 0;
+        return compare(loadHash(keccak256(abi.encodePacked(W1, W2))), c) == 0;
     }
 
-    function validateModInv(bytes memory a, bytes memory a_inv, bytes memory N) view returns (bool) {
+    function validateModInv(bytes memory a, bytes memory a_inv, bytes memory N) internal returns (bool) {
         return compare(modmul(a, a_inv, N), toBigInt(1)) == 0;
     }
 
     function restoreCommitment(bytes memory N, bytes memory g, bytes memory h, bytes memory D1,
-        bytes memory D2, bytes memory Einv, bytes memory c) view returns (bytes memory ret) {
+        bytes memory D2, bytes memory Einv, bytes memory c) internal returns (bytes memory ret) {
 
         return modmul(modmul(modexp(g, D1, N), modexp(h, D2, N), N), modexp(Einv, c, N), N);
     }
 
-    function loadHash(bytes32 f) view returns (bytes memory ret) {
+    function loadHash(bytes32 f) internal pure returns (bytes memory ret) {
         ret = new bytes(32);
         assembly {mstore(add(ret, 32), f) }
     }
 
-    function bitLength(uint x) view returns (uint) {
+    function bitLength(uint x) internal pure returns (uint) {
         uint test = 1;
         for (uint i = 0; i < 256; i++) {
             if (x < test) return i;
@@ -159,16 +162,16 @@ contract RangeProofValidator {
         return 256;
     }
 
-    function compare(bytes memory a, bytes memory b) view returns (int cmp) {
+    function compare(bytes memory a, bytes memory b) internal returns (int cmp) {
         (, cmp) = addOrSub(a, b, true);
     }
 
-    function toBigInt(uint x) view returns (bytes memory ret) {
+    function toBigInt(uint x) internal pure returns (bytes memory ret) {
         ret = new bytes(32);
         assembly { mstore(add(ret, 32), x) }
     }
 
-    function bignot(bytes memory x) view returns (bytes memory) {
+    function bignot(bytes memory x) internal pure returns (bytes memory) {
         uint pointer;
         uint pointerEnd;
         assembly {
@@ -183,15 +186,15 @@ contract RangeProofValidator {
         return x;
     }
 
-    function bigadd(bytes memory a, bytes memory b) view returns (bytes memory ret) {
+    function bigadd(bytes memory a, bytes memory b) internal returns (bytes memory ret) {
         (ret, ) = addOrSub(a, b, false);
     }
 
-    function bigsub(bytes memory a, bytes memory b) view returns (bytes memory ret) {
+    function bigsub(bytes memory a, bytes memory b) internal returns (bytes memory ret) {
         (ret, ) = addOrSub(a, b, true);
     }
 
-    function addOrSub(bytes memory _a, bytes memory _b, bool negative_b) view returns (bytes memory result, int cmp) {
+    function addOrSub(bytes memory _a, bytes memory _b, bool negative_b) internal returns (bytes memory result, int cmp) {
         result = new bytes(_a.length > _b.length ? _a.length : _b.length);
 
         uint aStart;
@@ -250,13 +253,13 @@ contract RangeProofValidator {
         return (result, cmp);
     }
 
-    function square(bytes memory x) view returns (bytes memory ret) {
+    function square(bytes memory x) internal returns (bytes memory ret) {
         bytes memory largeN = shiftLeft(x, int(x.length) * 8);
         return modexp(x, toBigInt(2), largeN);
     }
 
     // ab = ((a+b)^2-(a-b)^2) / 4
-    function multiply(bytes memory a, bytes memory b) view returns (bytes memory ret) {
+    function multiply(bytes memory a, bytes memory b) internal returns (bytes memory ret) {
         bytes memory two = toBigInt(2);
         bytes memory sum = bigadd(a, b); // a+b
         bytes memory diff = bigsub(a, b); // abs(a-b)
@@ -267,11 +270,11 @@ contract RangeProofValidator {
         ret = shiftLeft(ab4, -2);
     }
 
-    function modmul(bytes memory a, bytes memory b, bytes memory N) view returns (bytes memory ret) {
+    function modmul(bytes memory a, bytes memory b, bytes memory N) internal returns (bytes memory ret) {
         return bmod(multiply(a,b), N);
     }
 
-    function copyWords(uint dest, uint src, uint len) private view {
+    function copyWords(uint dest, uint src, uint len) internal pure{
         for(; len >= 32; len -= 32) {
             assembly {
                 mstore(dest, mload(src))
@@ -281,7 +284,7 @@ contract RangeProofValidator {
         }
     }
 
-    function trim(bytes memory x) view returns (bytes memory y) {
+    function trim(bytes memory x)internal pure returns (bytes memory y) {
         require(x.length % 32 == 0);
         bool isZero = true;
         uint zeroCount;
@@ -301,7 +304,7 @@ contract RangeProofValidator {
         }
     }
 
-    function shiftBitsRight(bytes x, uint bitShift) view returns (bytes memory y) {
+    function shiftBitsRight(bytes memory x, uint bitShift) internal pure returns (bytes memory y) {
         if (bitShift == 0) return x;
         require(bitShift <= 255);
         require(x.length % 32 == 0);
@@ -330,7 +333,7 @@ contract RangeProofValidator {
         }
     }
 
-    function shiftLeft(bytes memory x, int n) view returns (bytes memory ret) {
+    function shiftLeft(bytes memory x, int n) internal view returns (bytes memory ret) {
         // New bitlength = x.length * 8 + n; round up to multiple of 256
         int newBitLength = ((255 + n + int(x.length * 8)) / 256) * 256;
         if (newBitLength <= 0) return new bytes(0);
@@ -351,12 +354,12 @@ contract RangeProofValidator {
         ret = trim(shiftBitsRight(ret, bitShift));
     }
 
-    function bmod(bytes memory _x, bytes memory _mod) view returns (bytes memory ret) {
+    function bmod(bytes memory _x, bytes memory _mod) internal returns (bytes memory ret) {
         return modexp(_x, toBigInt(1), _mod);
     }
 
     // Wrapper for built-in bigint_modexp, modified from https://gist.github.com/lionello/ee285ea220dc64517499c971ff92a2a5
-    function modexp(bytes memory _base, bytes memory _exp, bytes memory _mod) view returns (bytes memory) {
+    function modexp(bytes memory _base, bytes memory _exp, bytes memory _mod) internal returns (bytes memory) {
 
         uint256 bl = _base.length;
         uint256 el = _exp.length;
