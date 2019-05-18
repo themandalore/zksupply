@@ -54,41 +54,41 @@ contract('RangeProofValidator', function(accounts) {
     assert.equal(result, NUMBER_1);
   });
     it("Test basic operations", async function () {
-        let result = rpv.bigadd.call(NUMBER_1, NUMBER_2)
-        let expectedResult = web3.utils.toBN(NUMBER_1).plus(web3.utils.toBN(NUMBER_2))
+        let result = await rpv.bigadd.call(NUMBER_1, NUMBER_2)
+        let expectedResult = web3.utils.toBN(NUMBER_1) + (web3.utils.toBN(NUMBER_2))
         assert.equal(web3.utils.toBN(result), expectedResult)
         result = await rpv.bigsub.call(BIG_NUMBER_1, BIG_NUMBER_2)
-        expectedResult = web3.utils.toBN(BIG_NUMBER_1).minus(web3.utils.toBN(BIG_NUMBER_2)).abs()
+        expectedResult = web3.utils.toBN(BIG_NUMBER_1) - web3.utils.toBN(BIG_NUMBER_2).abs()
         assert.equal(web3.utils.toBN(result), expectedResult)
         result = await rpv.multiply.call(SMALL_NUMBER_1, BIG_NUMBER_3)
-        expectedResult = web3.utils.toBN(SMALL_NUMBER_1).mul(web3.utils.toBN(BIG_NUMBER_3))
+        expectedResult = web3.utils.toBN(SMALL_NUMBER_1) * (web3.utils.toBN(BIG_NUMBER_3))
         assert.equal(web3.utils.toBN(result), expectedResult)
         result = await rpv.bmod.call(BIG_NUMBER_3, SMALL_NUMBER_1)
-        expectedResult = web3.utils.toBN(BIG_NUMBER_3).mod(web3.utils.toBN(SMALL_NUMBER_1))
+        expectedResult = web3.utils.toBN(BIG_NUMBER_3) % (web3.utils.toBN(SMALL_NUMBER_1))
         assert.equal(web3.utils.toBN(result), expectedResult)
   });
 
   it("should calculate square of big number", async function () {
     var result = await rpv.square.call(NUMBER_1)
     let expectedResult = web3.utils.toBN(NUMBER_1).mul(web3.utils.toBN(NUMBER_1))
-    assert.equal(web3.utils.toBN(result).toFixed(), expectedResult.toFixed())
+    assert.equal(web3.utils.toBN(result), expectedResult)
     result = await rpv.square.call(BIG_NUMBER_1)
     expectedResult = web3.utils.toBN(BIG_NUMBER_1).mul(web3.utils.toBN(BIG_NUMBER_1))
-    assert.equal(web3.utils.toBN(result).toFixed(), expectedResult.toFixed())
+    assert.equal(web3.utils.toBN(result), expectedResult)
   });
   it("should correctly shift left or right", async function () {
     var result = await rpv.shiftLeft.call(BIG_NUMBER_1, 40)
     let expectedResult = web3.utils.toBN(BIG_NUMBER_1).mul(web3.utils.toBN(2).pow(40))
-      assert.equal(web3.utils.toBN(result).toFixed(), expectedResult.toFixed())
+      assert.equal(web3.utils.toBN(result), expectedResult)
     result = await rpv.shiftLeft.call(BIG_NUMBER_1, 300)
       expectedResult = web3.utils.toBN(BIG_NUMBER_1).mul(web3.utils.toBN(2).pow(300))
-      assert.equal(web3.utils.toBN(result).toFixed(), expectedResult.toFixed())
+      assert.equal(web3.utils.toBN(result), expectedResult)
       result = await rpv.shiftLeft.call(BIG_NUMBER_1, -40)
       expectedResult = web3.utils.toBN(BIG_NUMBER_1).divToInt(web3.utils.toBN(2).pow(40))
-      assert.equal(web3.utils.toBN(result).toFixed(), expectedResult.toFixed())
+      assert.equal(web3.utils.toBN(result), expectedResult)
       result = rpv.shiftLeft.call(BIG_NUMBER_1, -300)
       expectedResult = web3.utils.toBN(BIG_NUMBER_1).divToInt(web3.utils.toBN(2).pow(300))
-      assert.equal(web3.utils.toBN(result).toFixed(), expectedResult.toFixed())
+      assert.equal(web3.utils.toBN(result), expectedResult)
       result = await rpv.shiftLeft.call(BIG_NUMBER_1, - BIG_NUMBER_1.length * 4)
       assert.equal(result, "0x")
   });

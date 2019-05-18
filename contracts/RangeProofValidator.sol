@@ -45,8 +45,8 @@ contract RangeProofValidator {
             copyWords(destPointer, srcPointer, length);
             prf[i] = part;
         }
-        // return validateProof(lower, upper, com, prf);
-        return true;
+        return validateProof(lower, upper, com, prf);
+        //return true;
     }
 
     function validateProof(uint lower, uint upper, bytes[] memory com, bytes[] memory prf) internal returns (bool) {
