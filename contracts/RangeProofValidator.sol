@@ -333,7 +333,7 @@ contract RangeProofValidator {
         }
     }
 
-    function shiftLeft(bytes memory x, int n) internal view returns (bytes memory ret) {
+    function shiftLeft(bytes memory x, int n) internal pure returns (bytes memory ret) {
         // New bitlength = x.length * 8 + n; round up to multiple of 256
         int newBitLength = ((255 + n + int(x.length * 8)) / 256) * 256;
         if (newBitLength <= 0) return new bytes(0);
@@ -359,7 +359,7 @@ contract RangeProofValidator {
     }
 
     // Wrapper for built-in bigint_modexp, modified from https://gist.github.com/lionello/ee285ea220dc64517499c971ff92a2a5
-    function modexp(bytes memory _base, bytes memory _exp, bytes memory _mod) internal returns (bytes memory) {
+    function modexp(bytes memory _base, bytes memory _exp, bytes memory _mod) public payable returns (bytes memory) {
 
         uint256 bl = _base.length;
         uint256 el = _exp.length;
@@ -384,4 +384,5 @@ contract RangeProofValidator {
         require(rawInput.length == 96 + bl + el + ml);
         return ret;
     }
+  
 }

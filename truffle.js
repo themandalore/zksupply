@@ -2,7 +2,7 @@ var HDWalletProvider = require("truffle-hdwallet-provider");
 
 var mnemonic = "nick lucian brenda kevin sam fiscal patch fly damp ocean produce wish";
 
-//ganache-cli -l 10000000
+//ganache-cli -l 200000000
 
 module.exports = {
   networks: {
@@ -10,7 +10,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*",
-      gas: 10000000,
+      gas: 100000000,
       websockets: true
     },
     dev2: {

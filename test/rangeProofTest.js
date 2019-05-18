@@ -20,7 +20,7 @@ contract('RangeProofValidator', function(accounts) {
     const lower = 18
     const upper = 65
     console.log('Contract Deployed at: ',rpv.address);
-    var res = await rpv.validate(lower, upper, commitment, proof);
+    var res = await rpv.validate.call(lower, upper, commitment, proof);
     assert.equal(res, true)
   })
 
