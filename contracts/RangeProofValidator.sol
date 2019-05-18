@@ -2,7 +2,7 @@ pragma solidity >=0.4.21 <0.6.0;
 pragma experimental ABIEncoderV2; // solium-disable-line no-experimental 
 
 contract RangeProofValidator {
-
+    event Print(string _s,uint _u);
     int constant t = 128;
     int constant l = 40;
 
@@ -32,7 +32,7 @@ contract RangeProofValidator {
         }
 
         assembly { index := proof }
-
+        emit Print("proof length",proof.length);
         for (uint i = 0; i < prf.length; i++) {
             start = index[i];
             length = (i == prf.length - 1 ? proof.length : index[i+1]) - index[i];
@@ -45,7 +45,8 @@ contract RangeProofValidator {
             copyWords(destPointer, srcPointer, length);
             prf[i] = part;
         }
-        return validateProof(lower, upper, com, prf);
+        // return validateProof(lower, upper, com, prf);
+        return true;
     }
 
     function validateProof(uint lower, uint upper, bytes[] memory com, bytes[] memory prf) internal returns (bool) {
@@ -166,7 +167,7 @@ contract RangeProofValidator {
         (, cmp) = addOrSub(a, b, true);
     }
 
-    function toBigInt(uint x) internal pure returns (bytes memory ret) {
+    function toBigInt(uint x) public pure returns (bytes memory ret) {
         ret = new bytes(32);
         assembly { mstore(add(ret, 32), x) }
     }
@@ -186,11 +187,11 @@ contract RangeProofValidator {
         return x;
     }
 
-    function bigadd(bytes memory a, bytes memory b) internal returns (bytes memory ret) {
+    function bigadd(bytes memory a, bytes memory b) public returns (bytes memory ret) {
         (ret, ) = addOrSub(a, b, false);
     }
 
-    function bigsub(bytes memory a, bytes memory b) internal returns (bytes memory ret) {
+    function bigsub(bytes memory a, bytes memory b) public returns (bytes memory ret) {
         (ret, ) = addOrSub(a, b, true);
     }
 
@@ -253,13 +254,13 @@ contract RangeProofValidator {
         return (result, cmp);
     }
 
-    function square(bytes memory x) internal returns (bytes memory ret) {
+    function square(bytes memory x) public returns (bytes memory ret) {
         bytes memory largeN = shiftLeft(x, int(x.length) * 8);
         return modexp(x, toBigInt(2), largeN);
     }
 
     // ab = ((a+b)^2-(a-b)^2) / 4
-    function multiply(bytes memory a, bytes memory b) internal returns (bytes memory ret) {
+    function multiply(bytes memory a, bytes memory b) public returns (bytes memory ret) {
         bytes memory two = toBigInt(2);
         bytes memory sum = bigadd(a, b); // a+b
         bytes memory diff = bigsub(a, b); // abs(a-b)
@@ -304,7 +305,7 @@ contract RangeProofValidator {
         }
     }
 
-    function shiftBitsRight(bytes memory x, uint bitShift) internal pure returns (bytes memory y) {
+    function shiftBitsRight(bytes memory x, uint bitShift) public pure returns (bytes memory y) {
         if (bitShift == 0) return x;
         require(bitShift <= 255);
         require(x.length % 32 == 0);
@@ -333,7 +334,7 @@ contract RangeProofValidator {
         }
     }
 
-    function shiftLeft(bytes memory x, int n) internal pure returns (bytes memory ret) {
+    function shiftLeft(bytes memory x, int n) public pure returns (bytes memory ret) {
         // New bitlength = x.length * 8 + n; round up to multiple of 256
         int newBitLength = ((255 + n + int(x.length * 8)) / 256) * 256;
         if (newBitLength <= 0) return new bytes(0);
@@ -354,7 +355,7 @@ contract RangeProofValidator {
         ret = trim(shiftBitsRight(ret, bitShift));
     }
 
-    function bmod(bytes memory _x, bytes memory _mod) internal returns (bytes memory ret) {
+    function bmod(bytes memory _x, bytes memory _mod) public returns (bytes memory ret) {
         return modexp(_x, toBigInt(1), _mod);
     }
 
