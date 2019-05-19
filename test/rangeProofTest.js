@@ -95,11 +95,10 @@ contract('RangeProofValidator', function(accounts) {
   // });
 
   it("test zksensors", async function () {
-    await rpv.sensorReport(NUMBER_1,1,2,3,4);
+    await rpv.sensorReport(NUMBER_1,1,2,3,4,5,6);
     assert(await rpv.getNumberOfReportsById(NUMBER_1) == 1, "one record should be recorded");
     let vars = await rpv.getAllIds();
     assert(vars[0] == NUMBER_1, "all ids should return correct");
-    console.log(vars)
     vars = await rpv.getDetailsByIdAndIndex(NUMBER_1,0);
         console.log(vars['1'] )
     console.log(vars);
@@ -107,12 +106,14 @@ contract('RangeProofValidator', function(accounts) {
     assert(vars['1'] == 2 , "timestamp2 should be correct");
     assert(vars['2'] == 3, "Orientation1 should be correct");
     assert(vars['3'] == 4, "Orientation 2 should be correct");
+        assert(vars['4'] == 5, "key1 should be correct");
+    assert(vars['5'] == 6, "key2 should be correct");
     assert(await rpv.getSensorIdsLength() == 1);
-    await rpv.sensorReport(NUMBER_1,1,2,3,5);
+    await rpv.sensorReport(NUMBER_1,1,2,3,5,6,7);
     assert(await rpv.getSensorIdsLength() == 1);
   });
   it("test store proof zksensors", async function () {
-    await rpv.sensorReport(NUMBER_1,1,2,3,4);
+    await rpv.sensorReport(NUMBER_1,1,2,3,4,5,6);
     var proof = "0x0000000000000000000000000000000000000000000000000000000000000001";
     await rpv.storeProof(NUMBER_1,proof);
     assert(await rpv.getZkProof(NUMBER_1) == proof);
