@@ -1,9 +1,9 @@
 pragma solidity >=0.4.21 <0.6.0;
 pragma experimental ABIEncoderV2; // solium-disable-line no-experimental 
 //import "chainlink/contracts/ChainlinkClient.sol";
-import "./RangeProofValidator.sol";
+//import "./RangeProofValidator.sol";
 
-contract ZkSensors is RangeProofValidator{
+contract ZkSensors{
 
   struct Details {
         uint timestamp_c1;
@@ -29,7 +29,9 @@ contract ZkSensors is RangeProofValidator{
       orientation_c1: _oc1,
       orientation_c2: _oc2
     }));
-    sensorIds.push(_id);
+    if(len == 0){
+         sensorIds.push(_id); 
+    }
     emit SensorReport(_id, _tc1,_tc2,_oc1,_oc2);
   }
 
@@ -38,11 +40,6 @@ contract ZkSensors is RangeProofValidator{
     idToZkProof[_id] = _proof;
     emit ProofStored(_id,_proof);
   }
-
-  function generateCommitment(uint _tc1,uint _tc2, uint _oc1, uint _oc2) public returns(bytes memory res){
-    res = abi.encodePacked(toBytes(_tc1),toBytes(_tc2),toBytes(_oc1),toBytes(_oc2));
-  }
-
 
   function getAllIds() public view returns(bytes32[] memory){
     return sensorIds;

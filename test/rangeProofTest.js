@@ -108,6 +108,8 @@ contract('RangeProofValidator', function(accounts) {
     assert(vars['2'] == 3, "Orientation1 should be correct");
     assert(vars['3'] == 4, "Orientation 2 should be correct");
     assert(await rpv.getSensorIdsLength() == 1);
+    await rpv.sensorReport(NUMBER_1,1,2,3,5);
+    assert(await rpv.getSensorIdsLength() == 1);
   });
   it("test store proof zksensors", async function () {
     await rpv.sensorReport(NUMBER_1,1,2,3,4);
