@@ -46,10 +46,73 @@ contract RangeProofValidator {
             prf[i] = part;
         }
         return validateProof(lower, upper, com, prf);
-        //return true;
+       //return true;
     }
 
-    function validateProof(uint lower, uint upper, bytes[] memory com, bytes[] memory prf) internal returns (bool) {
+
+    function modInverse(uint a, uint p) public returns (uint) {
+        require (a != 0 && a != p && p != 0);
+        if (a > p)
+            a = a % p;
+        int t1;
+        int t2 = 1;
+        uint r1 = p;
+        uint r2 = a;
+        uint q;
+        while (r2 != 0) {
+            q = r1 / r2;
+            (t1, t2, r1, r2) = (t2, t1 - int(q) * t2, r2, r1 - q * r2);
+        }
+        if (t1 < 0)
+            return p - uint(-t1);
+        return uint(t1);
+    }
+
+uint j;
+
+  bytes[] challengesBigInt;
+  bytes[] responsesBigInt;
+ function verifyNonInteractiveDisjunctiveZKProofOfEncryptionOfPlaintextElGamal(uint p,uint  A,uint[] memory validPlainTexts,uint c2,bytes[] memory commitments,bytes[] memory challenges,bytes[] memory responses) public returns(bool result1,bool result2){
+
+  bytes[] memory commitmentsBigInt;
+  bytes memory pBigInt = toBigInt(p);
+  bytes[] memory validPlainTextsBigInt;
+  for(j =0; j< validPlainTexts.length;j++){
+    validPlainTextsBigInt[j] = toBigInt(validPlainTexts[j]);
+  }
+
+  for(j = 0; j < commitments.length; j++){
+    commitmentsBigInt[j] = toBigInt(bytesToUint(commitments[j]));
+    challengesBigInt[j] = toBigInt(bytesToUint(challenges[j]));
+    responsesBigInt[j] = toBigInt(bytesToUint(responses[j]));
+  }
+
+  for(j = 0; j < validPlainTextsBigInt.length; j++){
+    bytes memory leftBigInt = modexp(toBigInt(A),responsesBigInt[j],pBigInt);
+    bytes memory rightBigInt = modexp(multiply(commitmentsBigInt[j],multiply(toBigInt(c2),toBytes(modInverse(bytesToUint(validPlainTextsBigInt[j]),bytesToUint(pBigInt))))),challengesBigInt[j],pBigInt);
+    if(compare(leftBigInt,rightBigInt) == 0){
+        result1 = true;
+        }
+      }
+
+ /*** COMPUTE EXPECTED CHALLENGE ***/
+  pBigInt = "";
+  for(j = 0; j< commitmentsBigInt.length;j++){
+    pBigInt = abi.encodePacked(pBigInt,commitmentsBigInt[j]);
+  }
+ pBigInt = toBigInt(uint(keccak256(pBigInt))); //.remainder(pBigInt);
+
+ bytes memory sumChallenges = challengesBigInt[0];
+  for(j = 1; j < challengesBigInt.length; j++){
+    sumChallenges = abi.encodePacked(sumChallenges,challengesBigInt[j]);
+  }
+  /*** VERIFY CHALLENGES ***/
+  if(compare(pBigInt,sumChallenges)==0){
+    result2 = true;
+  }
+}
+
+function validateProof(uint lower, uint upper, bytes[] memory com, bytes[] memory prf) internal returns (bool) {
         // Stack too deep so store in memory: tmp = (a, b, cLeft, cRight)
         bytes[] memory tmp = new bytes[](11);
 
@@ -385,5 +448,16 @@ contract RangeProofValidator {
         require(rawInput.length == 96 + bl + el + ml);
         return ret;
     }
-  
+      function toBytes(uint256 x) internal returns (bytes memory b) {
+      b = new bytes(32);
+      assembly { mstore(add(b, 32), x) }
+  }
+
+    function bytesToUint(bytes memory b) public returns (uint256){
+      uint256 number;
+      for(uint i=0;i<b.length;i++){
+        number = number + uint256(uint8(b[i]))*(2**(8*(b.length-(i+1))));
+      }
+      return number;
+    }
 }

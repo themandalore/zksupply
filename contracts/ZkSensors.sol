@@ -18,48 +18,31 @@ contract ZkSensors is RangeProofValidator{
   bytes32[] sensorIds;
 
   event SensorReport(bytes32 _id,uint _tc1, uint _tc2, uint _oc1, uint _oc2);
-  event ProofVerified(bytes32 _id, bytes _proof);
+  event ProofStored(bytes32 _id, bytes _proof);
   event FailedProof(bytes32 _id, bytes _proof);
 
   function sensorReport(bytes32 _id, uint _tc1, uint _tc2, uint _oc1, uint _oc2) public {
+    uint len = idToSensorReport[_id].length;
     idToSensorReport[_id].push(Details({
       timestamp_c1: _tc1,
       timestamp_c2: _tc2,
       orientation_c1: _oc1,
       orientation_c2: _oc2
     }));
+    sensorIds.push(_id);
     emit SensorReport(_id, _tc1,_tc2,_oc1,_oc2);
   }
 
 
-  function verifyProof(bytes32 _id,bytes memory _proof) public returns(bool res){
-    uint _lower = 0;
-    uint _upper = 3;
-    Details[] storage _d = idToSensorReport[_id];
-    bytes memory _data;
-    bytes memory _comm;
-    for(uint i =0;i<_d.length;i++){
-      _data = generateCommitment(_d[i].timestamp_c1,_d[i].timestamp_c2,_d[i].orientation_c1,_d[i].orientation_c2);
-      _comm = abi.encodePacked(_comm,_data);
-    }
-    res = validate(_lower,_upper,_comm,_proof);
-    if(res){
-      idToZkProof[_id] = _proof;
-      emit ProofVerified(_id,_proof);
-    }
-    else{
-      emit FailedProof(_id,_proof);
-    }
+  function storeProof(bytes32 _id,bytes memory _proof) public returns(bool res){
+    idToZkProof[_id] = _proof;
+    emit ProofStored(_id,_proof);
   }
 
   function generateCommitment(uint _tc1,uint _tc2, uint _oc1, uint _oc2) public returns(bytes memory res){
     res = abi.encodePacked(toBytes(_tc1),toBytes(_tc2),toBytes(_oc1),toBytes(_oc2));
   }
 
-  function toBytes(uint256 x) internal returns (bytes memory b) {
-      b = new bytes(32);
-      assembly { mstore(add(b, 32), x) }
-  }
 
   function getAllIds() public view returns(bytes32[] memory){
     return sensorIds;
@@ -69,11 +52,15 @@ contract ZkSensors is RangeProofValidator{
     return sensorIds.length;
   }
 
-  function getDetailsByIdAndIndex(bytes32 _id, uint _index) public view returns(Details memory){
-    return idToSensorReport[_id][_index];
+  function getDetailsByIdAndIndex(bytes32 _id, uint _index) public view returns(uint,uint,uint,uint){
+    Details storage _d =  idToSensorReport[_id][_index];
+    return (_d.timestamp_c1,_d.timestamp_c2,_d.orientation_c1,_d.orientation_c2);
   }
 
   function getNumberOfReportsById(bytes32 _id) public view returns(uint){
     return idToSensorReport[_id].length;
+  }
+  function getZkProof(bytes32 _id) public view returns(bytes memory){
+    return idToZkProof[_id];
   }
 }
